@@ -13,7 +13,7 @@ from scipy.fftpack import fft, ifft
 plt.style.use('seaborn')
 import pickle
 from scipy import stats
-
+import pywt
 
 def plot_histogram_of_extrema_min_max(r):
     r_max = find_vals_of_r_extrema(r, "max")
@@ -75,4 +75,23 @@ def plot_individual_cell(w, u, r, h, t, x, loc):
     ax[1, 0].set_title("w vs t")
     ax[1, 1].plot(x, r, c = "b")
     ax[1, 1].set_title("r vs x")
+    
+def plot_scaleogram(sig, wavelet="morl", width_max = 201):
+    """
+    plots scaleogram of using cwt
+    cwt : takes a wavelet a compact wave of finite size 
+    and computes convolution with signal at varying scales of the wavelet by translating
+    it over the signal gives the output as (scale, n_data)
+    
+    interpretation : dark bands show power of signal darker bands = more power 
+    
+    advantages : better than using stft as provides information about both freq and time
+               : doesnt assume signal is infinite 
+               : has significance tests so we can distinguish whether scaleogram is because of signal or just random noise 
+               : use instead of quality factor which is for infinite signals 
+    """
+    coef, freqs=pywt.cwt(sig,np.arange(1,201),wavelet)
+    plt.imshow(coef, cmap='PRGn', aspect='auto',
+           vmax=abs(coef).max(), vmin=-abs(coef).max())
+    plt.show()
     

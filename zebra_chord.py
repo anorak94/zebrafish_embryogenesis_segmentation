@@ -13,7 +13,7 @@ from scipy.fftpack import fft, ifft
 plt.style.use('seaborn')
 import pickle
 from scipy import stats
-
+import copy
 
 def return_default_dic():
     param_dic = {"c":15, "n_t":200, "dt": 0.05, "gamma1":10, "n": 5, "m": 5, "tau_2":5, "gamma2":1, "n_c":100, "dx":1.5,
@@ -110,5 +110,55 @@ def return_heaviside(n_c, n_t, dx, dt, v_0):
     return ha2d
 
 
+def smooth(x,window_len=11,window='hanning'):
+    """smooth the data using a window with requested size.
+    """
+
+    if x.ndim != 1:
+        raise ValueError ("smooth only accepts 1 dimension arrays.")
+
+    if x.size < window_len:
+        raise ValueError( "Input vector needs to be bigger than window size.")
+
+
+    if window_len<3:
+        return x
+
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise ValueError ("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='valid')
+    return y
+
+
+def zero_runs(a):
+    # Create an array that is 1 where a is 0, and pad each end with an extra 0.
+    iszero = np.concatenate(([0], np.equal(a, 0).view(np.int8), [0]))
+    absdiff = np.abs(np.diff(iszero))
+    # Runs start and end where absdiff is 1.
+    ranges = np.where(absdiff == 1)[0].reshape(-1, 2)
+    return ranges
+
+def get_flatline(sig):
+    """
+    finds the flatline in the signal by finding all stretches of zeros and then gettting the index 
+    of the longest stretch 
+    """
+    diff = np.diff(copy.deepcopy(sig))
+    sub_threshold_indices = diff < 1e-5
+    diff[sub_threshold_indices] = 0
+    zero_ranges = zero_runs(diff)
+    len_zeros = [(z[1]-z[0]) for z in zero_ranges]
+    ind = zero_ranges[np.argmax(len_zeros)][0]
+    return ind
 
 
